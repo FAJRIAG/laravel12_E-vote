@@ -1,162 +1,180 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-[70vh] flex items-center justify-center px-4">
-  <div class="w-full max-w-md">
-    {{-- Heading --}}
-    <div class="text-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">Masuk ke Akun</h1>
-      <p class="text-sm text-gray-500 mt-1">Pilih metode login yang kamu inginkan.</p>
-    </div>
-
-    {{-- Alerts --}}
-    @if(session('ok'))
-      <div class="mb-4 p-3 text-sm text-green-700 bg-green-100 border border-green-300 rounded">
-        {{ session('ok') }}
-      </div>
-    @endif
-    @if($errors->any())
-      <div class="mb-4 p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded">
-        <ul class="list-disc ps-5">
-          @foreach($errors->all() as $err)
-            <li>{{ $err }}</li>
-          @endforeach
-        </ul>
-      </div>
-    @endif
-
-    <div class="bg-white rounded-xl shadow p-6">
-      {{-- Tabs --}}
-      <div class="flex rounded-lg p-1 bg-gray-100 mb-6" role="tablist" aria-label="Metode Login">
-        <button id="tab-email" type="button"
-                class="flex-1 text-sm font-medium px-4 py-2 rounded-md bg-white shadow"
-                aria-selected="true" aria-controls="panel-email">
-          Email & Password
-        </button>
-        <button id="tab-code" type="button"
-                class="flex-1 text-sm font-medium px-4 py-2 rounded-md"
-                aria-selected="false" aria-controls="panel-code">
-          Login via Kode
-        </button>
-      </div>
-
-      {{-- Panel: Email --}}
-      <div id="panel-email">
-        <form method="POST" action="{{ route('login') }}" class="space-y-4" novalidate>
-          @csrf
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Email</label>
-            <input type="email" id="email" name="email" value="{{ old('email') }}" required autocomplete="email"
-                   class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                   placeholder="nama@email.com">
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Password</label>
-            <div class="relative">
-              <input type="password" id="password" name="password" required autocomplete="current-password"
-                     class="w-full rounded-lg border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500"
-                     placeholder="••••••••">
-              <button type="button" id="togglePass"
-                      class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
-                      aria-label="Tampilkan/sembunyikan password">👁️</button>
+    <div class="min-h-[70vh] flex items-center justify-center px-4">
+        <div class="w-full max-w-md">
+            {{-- Heading --}}
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Masuk ke Akun</h1>
+                <p class="text-sm text-gray-500 mt-1">Pilih metode login yang kamu inginkan.</p>
             </div>
-          </div>
 
-          <div class="flex items-center justify-between">
-            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-              <input type="checkbox" name="remember" class="rounded text-blue-600">
-              Ingat saya
-            </label>
-            {{-- <a href="#" class="text-sm text-blue-600 hover:underline">Lupa password?</a> --}}
-          </div>
+            {{-- Alerts --}}
+            @if (session('ok'))
+                <div class="mb-4 p-3 text-sm text-green-700 bg-green-100 border border-green-300 rounded">
+                    {{ session('ok') }}
+                </div>
+            @endif
+            @if ($errors->any())
+                <div class="mb-4 p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded">
+                    <ul class="list-disc ps-5">
+                        @foreach ($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
-          <div class="pt-2">
-            <button type="submit"
-                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+            <div class="bg-white rounded-xl shadow p-6">
+                {{-- Tabs --}}
+                <div class="flex rounded-lg p-1 bg-gray-100 mb-6" role="tablist" aria-label="Metode Login">
+                    <button id="tab-email" type="button"
+                        class="flex-1 text-sm font-medium px-4 py-2 rounded-md bg-white shadow" aria-selected="true"
+                        aria-controls="panel-email">
+                        Email & Password
+                    </button>
+                    <button id="tab-code" type="button" class="flex-1 text-sm font-medium px-4 py-2 rounded-md"
+                        aria-selected="false" aria-controls="panel-code">
+                        Login via Kode
+                    </button>
+                </div>
+
+                {{-- Panel: Email --}}
+                <div id="panel-email">
+                    <form method="POST" action="{{ route('login') }}" class="space-y-4" novalidate>
+                        @csrf
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Email</label>
+                            <input type="email" id="email" name="email" value="{{ old('email') }}" required
+                                autocomplete="email"
+                                class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                placeholder="nama@email.com">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Password</label>
+                            <div class="relative">
+                                <input type="password" id="password" name="password" required
+                                    autocomplete="current-password"
+                                    class="w-full rounded-lg border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500"
+                                    placeholder="••••••••">
+                                <button type="button" id="togglePass"
+                                    class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700 flex items-center"
+                                    aria-label="Tampilkan/sembunyikan password">
+                                    <!-- Icon mata (terbuka) -->
+                                    <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7
+                                  -1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+
+                                    <!-- Icon mata tertutup (hidden awal) -->
+                                    <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7
+                                  a9.977 9.977 0 012.395-4.362M9.88 9.88a3 3 0 104.24 4.24M3 3l18 18" />
+                                    </svg>
+                                </button>
+
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" name="remember" class="rounded text-blue-600">
+                                Ingat saya
+                            </label>
+                            {{-- <a href="#" class="text-sm text-blue-600 hover:underline">Lupa password?</a> --}}
+                        </div>
+
+                        <div class="pt-2">
+                            <button type="submit"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
                            bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none
                            focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-              Masuk
-            </button>
-          </div>
-        </form>
-      </div>
+                                Masuk
+                            </button>
+                        </div>
+                    </form>
+                </div>
 
-      {{-- Panel: Kode (disembunyikan awalnya) --}}
-      <div id="panel-code" class="hidden">
-        <form method="POST" action="{{ route('login.code') }}" class="space-y-4" novalidate>
-          @csrf
+                {{-- Panel: Kode (disembunyikan awalnya) --}}
+                <div id="panel-code" class="hidden">
+                    <form method="POST" action="{{ route('login.code') }}" class="space-y-4" novalidate>
+                        @csrf
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="code">Kode Login</label>
-            <input type="text" id="code" name="code" required
-                   class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase tracking-widest"
-                   placeholder="CTH: ABCD-1234"
-                   oninput="this.value=this.value.toUpperCase()">
-            <p class="mt-1 text-xs text-gray-500">Masukkan kode yang dibagikan admin (satu kali pakai / sesuai pengaturan).</p>
-          </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1" for="code">Kode Login</label>
+                            <input type="text" id="code" name="code" required
+                                class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 uppercase tracking-widest"
+                                placeholder="CTH: ABCD-1234" oninput="this.value=this.value.toUpperCase()">
+                            <p class="mt-1 text-xs text-gray-500">Masukkan kode yang dibagikan admin (satu kali pakai /
+                                sesuai pengaturan).</p>
+                        </div>
 
-          {{-- <div>
+                        {{-- <div>
             <label class="block text-sm font-medium text-gray-700 mb-1" for="full_name">Nama Lengkap</label>
             <input type="text" id="full_name" name="full_name"
                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                    placeholder="Untuk identifikasi pemilih">
           </div> --}}
 
-          <div class="pt-2">
-            <button type="submit"
-                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                        <div class="pt-2">
+                            <button type="submit"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
                            bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none
                            focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-              Masuk
-            </button>
-          </div>
+                                Masuk
+                            </button>
+                        </div>
 
-          {{-- Link cepat kalau ingin pindah ke halaman khusus login kode --}}
-{{--           <p class="mt-3 text-center text-xs text-gray-500">
+                        {{-- Link cepat kalau ingin pindah ke halaman khusus login kode --}}
+                        {{--           <p class="mt-3 text-center text-xs text-gray-500">
             Perlu halaman terpisah? <a href="{{ route('login.code.show') }}" class="text-emerald-700 hover:underline">Buka /login-code</a>
           </p> --}}
-        </form>
-      </div>
+                    </form>
+                </div>
 
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
-<script>
-  // Toggle password
-  const btn = document.getElementById('togglePass');
-  const pass = document.getElementById('password');
-  if (btn && pass) btn.addEventListener('click', () => {
-    pass.type = pass.type === 'password' ? 'text' : 'password';
-  });
+    <script>
+        // Toggle password
+        const btn = document.getElementById('togglePass');
+        const pass = document.getElementById('password');
+        if (btn && pass) btn.addEventListener('click', () => {
+            pass.type = pass.type === 'password' ? 'text' : 'password';
+        });
 
-  // Tab logic — hindari konflik utility (hanya pakai 'hidden')
-  const tabEmail = document.getElementById('tab-email');
-  const tabCode  = document.getElementById('tab-code');
-  const panelEmail = document.getElementById('panel-email');
-  const panelCode  = document.getElementById('panel-code');
+        // Tab logic — hindari konflik utility (hanya pakai 'hidden')
+        const tabEmail = document.getElementById('tab-email');
+        const tabCode = document.getElementById('tab-code');
+        const panelEmail = document.getElementById('panel-email');
+        const panelCode = document.getElementById('panel-code');
 
-  function activate(tab) {
-    const isEmail = tab === 'email';
-    // Tab styling
-    tabEmail.classList.toggle('bg-white', isEmail);
-    tabEmail.classList.toggle('shadow', isEmail);
-    tabEmail.setAttribute('aria-selected', isEmail ? 'true' : 'false');
+        function activate(tab) {
+            const isEmail = tab === 'email';
+            // Tab styling
+            tabEmail.classList.toggle('bg-white', isEmail);
+            tabEmail.classList.toggle('shadow', isEmail);
+            tabEmail.setAttribute('aria-selected', isEmail ? 'true' : 'false');
 
-    tabCode.classList.toggle('bg-white', !isEmail);
-    tabCode.classList.toggle('shadow', !isEmail);
-    tabCode.setAttribute('aria-selected', !isEmail ? 'true' : 'false');
+            tabCode.classList.toggle('bg-white', !isEmail);
+            tabCode.classList.toggle('shadow', !isEmail);
+            tabCode.setAttribute('aria-selected', !isEmail ? 'true' : 'false');
 
-    // Panel show/hide (hanya gunakan 'hidden' untuk hindari warning IDE)
-    panelEmail.classList.toggle('hidden', !isEmail);
-    panelCode.classList.toggle('hidden', isEmail);
-  }
+            // Panel show/hide (hanya gunakan 'hidden' untuk hindari warning IDE)
+            panelEmail.classList.toggle('hidden', !isEmail);
+            panelCode.classList.toggle('hidden', isEmail);
+        }
 
-  tabEmail?.addEventListener('click', () => activate('email'));
-  tabCode?.addEventListener('click', () => activate('code'));
+        tabEmail?.addEventListener('click', () => activate('email'));
+        tabCode?.addEventListener('click', () => activate('code'));
 
-  // Default: tab email aktif
-  activate('email');
-</script>
+        // Default: tab email aktif
+        activate('email');
+    </script>
 @endsection

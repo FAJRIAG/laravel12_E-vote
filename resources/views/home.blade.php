@@ -35,9 +35,9 @@
               {{ $e->isOpen() ? 'DIBUKA' : 'TERTUTUP' }}
             </span>
           </div>
-          <p class="text-sm text-gray-500 mt-1">
+{{--           <p class="text-sm text-gray-500 mt-1">
             {{ optional($e->starts_at)->format('d/m/Y H:i') }} — {{ optional($e->ends_at)->format('d/m/Y H:i') }}
-          </p>
+          </p> --}}
           <p class="mt-2 text-sm text-gray-700">{{ \Illuminate\Support\Str::limit($e->description, 140) }}</p>
 
           {{-- Kandidat preview --}}

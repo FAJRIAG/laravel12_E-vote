@@ -60,6 +60,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // =======================
     Route::resource('codes', AdminLoginCodeController::class)->only(['index','create','store','destroy','update']);
     Route::post('codes/{code}/toggle', [AdminLoginCodeController::class, 'toggle'])->name('codes.toggle');
+
+    Route::get('codes/export/csv', [AdminLoginCodeController::class, 'exportCsv'])
+    ->name('codes.export.csv');
+
+    Route::get('codes/export/pdf', [AdminLoginCodeController::class, 'exportPdf'])
+    ->name('codes.export.pdf');
 });
 
 // =======================

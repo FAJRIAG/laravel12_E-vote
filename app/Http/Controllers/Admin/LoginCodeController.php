@@ -7,9 +7,13 @@ use App\Models\LoginCode;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Response;
+// (opsional PDF)
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LoginCodeController extends Controller
 {
+    /** List kode login + pencarian sederhana (?q=...) */
     public function index(Request $request)
     {
         $q = trim((string) $request->get('q'));
@@ -22,22 +26,23 @@ class LoginCodeController extends Controller
                 });
             })
             ->orderByDesc('created_at')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         return view('admin.codes.index', compact('codes', 'q'));
     }
 
+    /** Form create */
     public function create()
     {
         $users = User::orderBy('name')->get(['id', 'name']);
         return view('admin.codes.create', compact('users'));
     }
 
+    /** Simpan kode (bisa bulk via quantity) */
     public function store(Request $request)
     {
-        // Validasi input
         $data = $request->validate([
-            // Jika quantity == 1 boleh input manual "code" (opsional).
             'code'        => ['nullable', 'string', 'max:32'],
             'label'       => ['nullable', 'string', 'max:120'],
             'user_id'     => ['nullable', 'integer', 'exists:users,id'],
@@ -56,19 +61,13 @@ class LoginCodeController extends Controller
         $isActive   = $request->boolean('is_active', true);
         $isOneTime  = $request->boolean('is_one_time', false);
 
-        // Hindari NULL untuk DB yang NOT NULL: paksa default 1 bila kosong
-        // (Kalau di DB sudah nullable, ini tetap aman)
         $maxUsesInput = $data['max_uses'] ?? null;
-        $maxUses = $isOneTime
-            ? 1                       // one-time => batasi 1 secara praktis
-            : ($maxUsesInput ?: 1);   // multi-use => default 1 jika kosong
+        $maxUses = $isOneTime ? 1 : ($maxUsesInput ?: 1);
 
         $toCreate = [];
 
-        // Jika hanya 1 kode & user mengisi "code" manual, pakai itu.
         if ($qty === 1 && !empty($data['code'])) {
             $codeStr = $this->normalizeCode($data['code']);
-            // Pastikan unik
             if (LoginCode::where('code', $codeStr)->exists()) {
                 return back()->withErrors(['code' => 'Kode sudah dipakai, gunakan kode lain.'])->withInput();
             }
@@ -86,7 +85,6 @@ class LoginCodeController extends Controller
                 'updated_at'  => now(),
             ];
         } else {
-            // Generate banyak kode
             for ($i = 0; $i < $qty; $i++) {
                 $codeStr = $this->generateUniqueCode();
 
@@ -112,9 +110,9 @@ class LoginCodeController extends Controller
             ->with('ok', "Berhasil membuat {$qty} kode.");
     }
 
+    /** Update ringan */
     public function update(Request $request, LoginCode $code)
     {
-        // Update ringan: label, user_id, aktif, one-time, max_uses, expires_at
         $data = $request->validate([
             'label'       => ['nullable', 'string', 'max:120'],
             'user_id'     => ['nullable', 'integer', 'exists:users,id'],
@@ -129,11 +127,8 @@ class LoginCodeController extends Controller
         $code->is_active   = $request->boolean('is_active', $code->is_active);
         $code->is_one_time = $request->boolean('is_one_time', $code->is_one_time);
 
-        // Sama seperti store: jangan biarkan null ke DB NOT NULL
         $maxUsesInput = $data['max_uses'] ?? null;
-        $code->max_uses = $code->is_one_time
-            ? 1
-            : ($maxUsesInput ?: ($code->max_uses ?: 1));
+        $code->max_uses = $code->is_one_time ? 1 : ($maxUsesInput ?: ($code->max_uses ?: 1));
 
         $code->expires_at  = $data['expires_at'] ?? $code->expires_at;
         $code->save();
@@ -141,6 +136,7 @@ class LoginCodeController extends Controller
         return back()->with('ok', 'Kode diperbarui.');
     }
 
+    /** Toggle aktif/nonaktif */
     public function toggle(LoginCode $code)
     {
         $code->is_active = !$code->is_active;
@@ -149,28 +145,104 @@ class LoginCodeController extends Controller
         return back()->with('ok', 'Status aktif kode diubah.');
     }
 
+    /** Hapus kode */
     public function destroy(LoginCode $code)
     {
         $code->delete();
         return back()->with('ok', 'Kode dihapus.');
     }
 
+    // =======================
+    // EXPORT (HANYA 2 KOLOM)
+    // =======================
+
+    /** Export CSV: hanya Code & Masa Aktif (expires_at) */
+    public function exportCsv(Request $request)
+    {
+        $q = trim((string) $request->get('q'));
+
+        $codes = LoginCode::query()
+            ->select(['code', 'expires_at'])
+            ->when($q, function ($x) use ($q) {
+                $x->where(function ($s) use ($q) {
+                    $s->where('code','like',"%{$q}%")
+                      ->orWhere('label','like',"%{$q}%");
+                });
+            })
+            ->orderByDesc('created_at')
+            ->get();
+
+        $filename = 'login-codes-' . now()->format('Ymd-His') . '.csv';
+        $headers  = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($codes) {
+            $out = fopen('php://output', 'w');
+            // BOM untuk Excel (UTF-8)
+            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // Header 2 kolom
+            fputcsv($out, ['Code', 'Masa Aktif Sampai']);
+
+            foreach ($codes as $c) {
+                $exp = $c->expires_at ? $c->expires_at->format('Y-m-d H:i') : '-';
+                fputcsv($out, [$c->code, $exp]);
+            }
+
+            fclose($out);
+        };
+
+        return Response::stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export PDF: hanya Code & Masa Aktif (kamu kondisikan di Blade)
+     * Syarat: view 'admin.codes.pdf' meng-handle $onlyCodeAndExpiry = true
+     */
+    public function exportPdf(Request $request)
+    {
+        $q = trim((string) $request->get('q'));
+
+        $codes = LoginCode::query()
+            ->select(['code', 'expires_at'])
+            ->when($q, function ($x) use ($q) {
+                $x->where(function ($s) use ($q) {
+                    $s->where('code','like',"%{$q}%")
+                      ->orWhere('label','like',"%{$q}%");
+                });
+            })
+            ->orderByDesc('created_at')
+            ->get();
+
+        $pdf = Pdf::loadView('admin.codes.pdf', [
+            'codes'              => $codes,
+            'q'                  => $q,
+            'title'              => 'Daftar Kode Login',
+            'onlyCodeAndExpiry'  => true, // <-- pakai flag ini di Blade
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'login-codes-' . now()->format('Ymd-His') . '.pdf';
+        return $pdf->download($filename);
+    }
+
     // =========================
     // Helpers
     // =========================
+
+    /** Rapikan manual code: uppercase + grup 4-4-4 */
     protected function normalizeCode(string $raw): string
     {
-        // Rapikan: upper, hilangkan spasi, pastikan format XXX-XXXX-XXXX-ish
         $t = strtoupper(preg_replace('/[^A-Z0-9]/', '', $raw));
-        // Kelompokkan jadi 4-4-4 (atau sesuai panjang)
         $parts = str_split($t, 4);
         return implode('-', $parts);
     }
 
+    /** Generate kode unik: XXXX-XXXX-XXXX */
     protected function generateUniqueCode(): string
     {
         do {
-            // Format: XXXX-XXXX-XXXX (alnum uppercase)
             $c = strtoupper(Str::random(4)) . '-' . strtoupper(Str::random(4)) . '-' . strtoupper(Str::random(4));
         } while (LoginCode::where('code', $c)->exists());
 
