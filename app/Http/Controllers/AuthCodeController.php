@@ -11,11 +11,17 @@ use Illuminate\Support\Str;
 
 class AuthCodeController extends Controller
 {
+    /**
+     * Tampilkan form login menggunakan kode.
+     */
     public function showForm()
     {
         return view('auth.login_code');
     }
 
+    /**
+     * Autentikasi memakai kode (logika kamu dipertahankan).
+     */
     public function authenticate(Request $request)
     {
         $data = $request->validate([
@@ -33,7 +39,7 @@ class AuthCodeController extends Controller
             ->orWhereRaw("REPLACE(code, '-', '') = ?", [$enteredNoDash])
             ->first();
 
-        // Pastikan model punya method isValid() (sudah kamu tambahkan di app/Models/LoginCode.php)
+        // Pastikan model punya method isValid()
         if (!$code || !$code->isValid()) {
             return back()
                 ->withErrors(['code' => 'Kode tidak valid / sudah kadaluarsa / tidak aktif / kuota habis.'])
@@ -68,7 +74,6 @@ class AuthCodeController extends Controller
 
         // 4) Tandai pemakaian code
         if (!empty($code->is_one_time) && $code->is_one_time && empty($code->used_at)) {
-            // jika pakai pola one-time + kolom used_at tersedia
             $code->used_at = now();
         }
 

@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\LoginCodeMail;
 use App\Models\LoginCode;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Response;
-// (opsional PDF)
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class LoginCodeController extends Controller
 {
@@ -39,30 +41,114 @@ class LoginCodeController extends Controller
         return view('admin.codes.create', compact('users'));
     }
 
-    /** Simpan kode (bisa bulk via quantity) */
+    /**
+     * Simpan kode:
+     * - Jika "emails" diisi (satu per baris/koma) => 1 kode per email (+ opsional kirim email)
+     * - Jika "emails" kosong => logika lama (bulk via quantity), TANPA field required
+     */
     public function store(Request $request)
     {
+        // Tidak ada 'required' untuk quantity
         $data = $request->validate([
-            'code'        => ['nullable', 'string', 'max:32'],
-            'label'       => ['nullable', 'string', 'max:120'],
-            'user_id'     => ['nullable', 'integer', 'exists:users,id'],
-            'is_active'   => ['nullable'],
-            'is_one_time' => ['nullable'],
-            'max_uses'    => ['nullable', 'integer', 'min:1'],
-            'quantity'    => ['required', 'integer', 'min:1', 'max:500'],
-            'expires_at'  => ['nullable', 'date'],
+            'code'           => ['nullable', 'string', 'max:32'],
+            'label'          => ['nullable', 'string', 'max:120'],
+            'user_id'        => ['nullable', 'integer', 'exists:users,id'],
+            'is_active'      => ['nullable'],
+            'is_one_time'    => ['nullable'],
+            'max_uses'       => ['nullable', 'integer', 'min:1'],
+            'quantity'       => ['nullable', 'integer', 'min:1', 'max:500'],
+            'expires_at'     => ['nullable', 'date'],
+
+            // dukungan bulk by email (opsional)
+            'emails'         => ['nullable', 'string'],   // daftar email (newline/koma)
+            'send_email_now' => ['nullable', 'boolean'],
         ]);
 
-        $qty        = (int) $data['quantity'];
-        $label      = $data['label'] ?? null;
-        $userId     = $data['user_id'] ?? null;
-        $expiresAt  = $data['expires_at'] ?? null;
+        $label     = $data['label'] ?? null;
+        $userId    = $data['user_id'] ?? null;
+        $expiresAt = $data['expires_at'] ?? null;
 
-        $isActive   = $request->boolean('is_active', true);
-        $isOneTime  = $request->boolean('is_one_time', false);
+        $isActive  = $request->boolean('is_active', true);
+        $isOneTime = $request->boolean('is_one_time', false);
+        $sendNow   = $request->boolean('send_email_now', true);
 
         $maxUsesInput = $data['max_uses'] ?? null;
         $maxUses = $isOneTime ? 1 : ($maxUsesInput ?: 1);
+
+        // --- Parse daftar email (unik & valid) ---
+        $emails = [];
+        if (!empty($data['emails'])) {
+            // terima newline/koma sebagai pemisah
+            $raw = str_replace(',', "\n", $data['emails']);
+            $lines = preg_split('/\r\n|\r|\n/', $raw);
+            foreach ($lines as $line) {
+                $e = strtolower(trim($line));
+                if ($e && filter_var($e, FILTER_VALIDATE_EMAIL)) {
+                    $emails[$e] = true; // unique
+                }
+            }
+            $emails = array_values(array_keys($emails));
+        }
+
+        // ======================
+        // CABANG A: PAKAI EMAILS
+        // ======================
+        if (count($emails) > 0) {
+            $created = 0; $sent = 0; $fail = 0;
+
+            foreach ($emails as $email) {
+                $codeStr = $this->generateUniqueCode();
+
+                $row = [
+                    'code'        => $codeStr,
+                    'label'       => $label,
+                    'user_id'     => $userId,
+                    'is_active'   => $isActive,
+                    'is_one_time' => $isOneTime,
+                    'max_uses'    => $maxUses,
+                    'expires_at'  => $expiresAt,
+                    'created_by'  => auth()->id(),
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
+                ];
+
+                // simpan email ke DB hanya jika kolomnya ada (agar aman di berbagai skema)
+                if (Schema::hasColumn('login_codes', 'email')) {
+                    $row['email'] = $email;
+                }
+
+                // simpan per-item agar bisa kirim email per baris
+                $lc = new LoginCode($row);
+                $lc->save();
+                $created++;
+
+                // kirim pakai variabel $email (bukan $row['email']) agar tetap terkirim walau kolom DB 'email' belum ada
+                if ($sendNow) {
+                    try {
+                        $loginUrl = route('login'); // atau url('/login')
+                        Mail::to($email)->send(new LoginCodeMail($codeStr, $loginUrl));
+                        $sent++;
+                    } catch (\Throwable $e) {
+                        $fail++;
+                        // \Log::error('MAIL SEND FAILED', ['email' => $email, 'err' => $e->getMessage()]);
+                    }
+                }
+            }
+
+            $msg = "Berhasil membuat {$created} kode.";
+            if ($sendNow) {
+                $msg .= " Email terkirim: {$sent}" . ($fail ? ", gagal: {$fail}" : "") . ".";
+            }
+
+            return redirect()->route('admin.codes.index')->with('ok', $msg);
+        }
+
+        // ===========================
+        // CABANG B: TANPA EMAILS
+        // ===========================
+        // quantity tidak wajib; jika kosong/0 → default 1
+        $qty = (int) ($data['quantity'] ?? 0);
+        if ($qty < 1) $qty = 1;
 
         $toCreate = [];
 
@@ -103,6 +189,7 @@ class LoginCodeController extends Controller
             }
         }
 
+        // LOGIKA LAMA: bulk insert
         LoginCode::insert($toCreate);
 
         return redirect()
@@ -220,7 +307,7 @@ class LoginCodeController extends Controller
             'codes'              => $codes,
             'q'                  => $q,
             'title'              => 'Daftar Kode Login',
-            'onlyCodeAndExpiry'  => true, // <-- pakai flag ini di Blade
+            'onlyCodeAndExpiry'  => true,
         ])->setPaper('a4', 'portrait');
 
         $filename = 'login-codes-' . now()->format('Ymd-His') . '.pdf';

@@ -4,11 +4,17 @@
 <div class="max-w-md mx-auto">
   <div class="bg-white rounded-xl shadow p-6">
     <h1 class="text-xl font-semibold mb-1">Login dengan Kode</h1>
-    <p class="text-sm text-gray-500 mb-4">Masukkan kode yang diberikan admin.</p>
+    <p class="text-sm text-gray-500 mb-4">Masukkan kode yang diberikan admin atau minta kode via email.</p>
 
+    {{-- Flash success / error --}}
     @if(session('ok'))
       <div class="mb-3 p-3 text-sm bg-green-50 border border-green-200 text-green-800 rounded">
         {{ session('ok') }}
+      </div>
+    @endif
+    @if(session('status'))
+      <div class="mb-3 p-3 text-sm bg-green-50 border border-green-200 text-green-800 rounded">
+        {{ session('status') }}
       </div>
     @endif
     @if($errors->any())
@@ -17,6 +23,7 @@
       </div>
     @endif
 
+    {{-- FORM 1: LOGIN DENGAN KODE --}}
     <form method="post" action="{{ route('login.code') }}" class="space-y-4">
       @csrf
       <div>
@@ -39,8 +46,38 @@
       </button>
     </form>
 
+    {{-- Separator --}}
+    <div class="flex items-center my-6">
+      <div class="flex-grow h-px bg-gray-200"></div>
+      <span class="px-3 text-xs text-gray-400 uppercase tracking-wider">atau</span>
+      <div class="flex-grow h-px bg-gray-200"></div>
+    </div>
+
+    {{-- FORM 2: MINTA KODE VIA EMAIL (kirim ke Gmail) --}}
+    <form method="post" action="{{ route('login.code.request.send') }}" class="space-y-4">
+      @csrf
+      <div>
+        <label class="block text-sm font-medium mb-1">Kirim Kode ke Email</label>
+        <input type="email" name="email" value="{{ old('email') }}" placeholder="alamat@gmail.com"
+               class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500" required>
+        <p class="text-xs text-gray-500 mt-1">Kode akan dikirim via email (cek Inbox/Spam).</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Nama (opsional)</label>
+        <input type="text" name="name" value="{{ old('name') }}" placeholder="Nama Anda"
+               class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+
+      <button class="w-full px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+        Kirim Kode ke Email
+      </button>
+    </form>
+
     <div class="mt-4 text-center">
-      <a href="{{ route('login.show') }}" class="text-sm text-gray-600 hover:underline">Login dengan Email/Password</a>
+      <a href="{{ route('login.show') }}" class="text-sm text-gray-600 hover:underline">
+        Login dengan Email/Password
+      </a>
     </div>
   </div>
 </div>

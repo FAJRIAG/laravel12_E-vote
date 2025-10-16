@@ -19,19 +19,13 @@
       </form>
 
       <a href="{{ route('admin.codes.export.csv', request()->only('q')) }}"
-         class="px-3 py-2 rounded border text-sm hover:bg-gray-50">
-        Download CSV
-      </a>
+         class="px-3 py-2 rounded border text-sm hover:bg-gray-50">Download CSV</a>
 
       <a href="{{ route('admin.codes.export.pdf', request()->only('q')) }}"
-         class="px-3 py-2 rounded border text-sm hover:bg-gray-50">
-        Download PDF
-      </a>
+         class="px-3 py-2 rounded border text-sm hover:bg-gray-50">Download PDF</a>
 
       <a href="{{ route('admin.codes.create') }}"
-         class="px-3 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">
-        Buat Kode
-      </a>
+         class="px-3 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Buat Kode</a>
     </div>
   </div>
 
@@ -72,11 +66,10 @@
             </td>
             <td class="px-5 py-3">{{ $c->is_one_time ? 'Ya' : 'Tidak' }}</td>
             <td class="px-5 py-3">{{ $c->max_uses ?? '—' }}</td>
-            <td class="px-5 py-3">{{ $c->used_count ?? 0 }}</td>
+            <td class="px-5 py-3">{{ $c->used_count ?? $c->uses_count ?? 0 }}</td>
             <td class="px-5 py-3">{{ optional($c->expires_at)->format('d/m/Y H:i') ?? '—' }}</td>
             <td class="px-5 py-3">{{ optional($c->last_used_at)->format('d/m/Y H:i') ?? '—' }}</td>
             <td class="px-5 py-3 text-right">
-              {{-- Toggle aktif --}}
               <form method="post" action="{{ route('admin.codes.toggle', $c) }}" class="inline">
                 @csrf
                 <button class="text-sm text-emerald-700 hover:underline" type="submit">
@@ -84,7 +77,6 @@
                 </button>
               </form>
 
-              {{-- Hapus --}}
               <form method="post" action="{{ route('admin.codes.destroy', $c) }}" class="inline ms-3"
                     onsubmit="return confirm('Hapus kode {{ $c->code }} ?')">
                 @csrf @method('DELETE')
@@ -94,9 +86,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="10" class="px-5 py-6 text-center text-slate-500">
-              Belum ada kode login.
-            </td>
+            <td colspan="10" class="px-5 py-6 text-center text-slate-500">Belum ada kode login.</td>
           </tr>
         @endforelse
       </tbody>
