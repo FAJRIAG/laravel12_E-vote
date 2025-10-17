@@ -1,7 +1,7 @@
 {{-- resources/views/errors/503.blade.php --}}
 @php
   $appName     = config('app.name', 'Aplikasi');
-  $supportEmail= config('mail.from.address', 'support@example.com');
+  $supportEmail= config('mail.from.address', '#');
   $retryAfter  = (int) request()->header('Retry-After', 30); // default 30s
 @endphp
 <!DOCTYPE html>
